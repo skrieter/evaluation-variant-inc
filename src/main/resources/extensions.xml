@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<extensions>
+	<point id="de.featjar.util.cli.CLIFunctionManager">
+	    <extension id="org.spldev.varcs.Main" />
+	</point>
+</extensions>
