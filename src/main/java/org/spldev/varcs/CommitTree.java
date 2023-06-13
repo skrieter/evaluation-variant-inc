@@ -35,6 +35,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand.ListMode;
 import org.eclipse.jgit.lib.ObjectId;
@@ -251,12 +252,9 @@ public class CommitTree {
 
     public int getNumberOfVariants() {
         final LinkedHashSet<CommitNode> endPoints = new LinkedHashSet<>();
-        final List<CommitNode> list = Trees.getPreOrderList(commitTree);
-        for (final CommitNode commitNode : list) {
-            if (commitNode.getChildren().isEmpty()) {
-                endPoints.add(commitNode);
-            }
-        }
+        Trees.preOrderStream(commitTree)
+                .filter(node -> node.getChildren().isEmpty())
+                .forEach(node -> endPoints.add(node));
         return endPoints.size();
     }
 
@@ -291,11 +289,11 @@ public class CommitTree {
         Logger.logInfo("Prune commit tree...");
         Main.tabFormatter.incTabLevel();
 
-        final List<CommitNode> list = Trees.getPreOrderList(commitTree);
-        int size;
+        final List<CommitNode> list =
+                Trees.preOrderStream(commitTree).distinct().collect(Collectors.toList());
+        boolean changed;
         do {
-            size = list.size();
-
+            changed = false;
             for (final CommitNode commitNode : list) {
                 final ArrayList<CommitNode> parents = new ArrayList<>(commitNode.getParents());
                 final HashSet<CommitNode> transitiveParents = new HashSet<>();
@@ -315,6 +313,7 @@ public class CommitTree {
                     if (transitiveParents.contains(parent)) {
                         parent.getChildren().remove(commitNode);
                         commitNode.getParents().remove(parent);
+                        changed = true;
                     }
                 }
             }
@@ -330,10 +329,11 @@ public class CommitTree {
                         parent.getChildren().add(child);
                         child.getParents().add(parent);
                     }
+                    changed = true;
                     iterator.remove();
                 }
             }
-        } while (size != list.size());
+        } while (changed);
 
         Main.tabFormatter.decTabLevel();
     }
@@ -342,43 +342,16 @@ public class CommitTree {
         Logger.logInfo("Sort commit tree...");
         Main.tabFormatter.incTabLevel();
 
-        final List<CommitNode> commits = Trees.getPreOrderList(commitTree);
-        for (final CommitNode commitNode : commits) {
+        Trees.postOrderStream(commitTree).forEach(commitNode -> {
             final ArrayList<CommitNode> sortedChildren = new ArrayList<>(commitNode.getChildren());
             Collections.sort(
                     sortedChildren,
                     (c1, c2) -> c1.getChildren().size() - c2.getChildren().size());
             commitNode.getChildren().clear();
             commitNode.getChildren().addAll(sortedChildren);
-        }
+        });
 
         Main.tabFormatter.decTabLevel();
-    }
-
-    public void removeTransitiveParents() throws Exception {
-        final List<CommitNode> commits = Trees.getPreOrderList(commitTree);
-        for (final CommitNode commitNode : commits) {
-            final ArrayList<CommitNode> parents = new ArrayList<>(commitNode.getParents());
-            final HashSet<CommitNode> transitiveParents = new HashSet<>();
-            final LinkedList<CommitNode> newTransitiveParents = new LinkedList<>();
-            for (final CommitNode parent : parents) {
-                newTransitiveParents.add(parent);
-                while (!newTransitiveParents.isEmpty()) {
-                    final CommitNode parent2 = newTransitiveParents.poll();
-                    for (final CommitNode transitiveParent : parent2.getParents()) {
-                        if (transitiveParents.add(transitiveParent)) {
-                            newTransitiveParents.offer(transitiveParent);
-                        }
-                    }
-                }
-            }
-            for (final CommitNode parent : parents) {
-                if (transitiveParents.contains(parent)) {
-                    parent.getChildren().remove(commitNode);
-                    commitNode.getParents().remove(parent);
-                }
-            }
-        }
     }
 
     public void collectParents(CommitNode commitNode, HashSet<CommitNode> parents) throws Exception {
