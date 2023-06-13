@@ -93,22 +93,30 @@ public class Main implements CLIFunction {
 	private Map<String, RepositoryProperties> repoMap = new HashMap<>();
 
 	@Override
-	public void run(List<String> args) {
-		try {
-			installLogger();
-			createDirectories();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		if (args.size() > 0) {
-			analyze(args.get(0));
-		} else {
-			analyze("systems.list");
-		}
-
-		Logger.logInfo("Finish");
+	public String getIdentifier() {
+		return "merge-variants";
 	}
+
+	@Override
+    public void run(List<String> args) {
+        try {
+            installLogger();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+        try {
+            createDirectories();
+            if (args.size() > 0) {
+                analyze(args.get(0));
+            } else {
+                analyze("systems.list");
+            }
+            Logger.logInfo("Finish");
+        } catch (IOException e) {
+            Logger.logError(e);
+        }
+    }
 
 	public void analyze(String systemListFileName) {
 		readSystemNames(systemListFileName);
@@ -294,8 +302,7 @@ public class Main implements CLIFunction {
 
 			csvWriter.addValue(commitTree.getNumberOfVariants()); // #Variants
 
-			final List<CommitNode> list = Trees.getPreOrderList(commitTree.getRoot());
-			int treeSize = list.size();
+			long treeSize = Trees.preOrderStream(commitTree.getRoot()).count();
 			final int orphanCount = commitTree.removeOrphans();
 
 			csvWriter.addValue(treeSize + orphanCount); // #Commits (all)
@@ -305,7 +312,7 @@ public class Main implements CLIFunction {
 			Logger.logDebug("Size (no orphans): " + (treeSize));
 			commitTree.pruneCommitTree();
 			commitTree.sortCommitTree();
-			treeSize = Trees.getPreOrderList(commitTree.getRoot()).size();
+			treeSize = Trees.preOrderStream(commitTree.getRoot()).count();
 			Logger.logDebug("Size (pruned):     " + treeSize);
 
 			csvWriter.addValue(treeSize); // #Commits (pruned)
@@ -321,7 +328,7 @@ public class Main implements CLIFunction {
 			tabFormatter.incTabLevel();
 			final CommitNode commitTreeRoot = CommitNodeIO.read(treeFile);
 			extractor.setCommitTree(commitTreeRoot);
-			final int treeSize = Trees.getPreOrderList(commitTreeRoot).size();
+			long treeSize = Trees.preOrderStream(commitTreeRoot).count();
 			Logger.logDebug("Size: " + treeSize);
 			tabFormatter.decTabLevel();
 		}

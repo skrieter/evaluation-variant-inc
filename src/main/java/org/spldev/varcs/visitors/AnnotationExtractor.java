@@ -71,8 +71,9 @@ public class AnnotationExtractor implements TreeVisitor<Void, CommitNode> {
 			Logger.logProgress(visitedNodes.size() + ": " + gitUtils.getCommitString(currentCommit));
 			final String curCommitId = gitUtils.getVariable(currentCommit).orElseThrow(NullPointerException::new);
 			assignment.put(curCommitId, Boolean.TRUE);
-			visitedNodes.put(currentCommit, assignment);
-			extractAnnotations(currentCommit, assignment);
+			if (visitedNodes.putIfAbsent(currentCommit, assignment) == null) {
+				extractAnnotations(currentCommit, assignment);
+            }
 			return VisitorResult.Continue;
 		} catch (final Exception e) {
 			Logger.logError(e);
@@ -88,8 +89,8 @@ public class AnnotationExtractor implements TreeVisitor<Void, CommitNode> {
 
 		final ArrayList<TextFileNode> values = new ArrayList<>(fileMap.getTextFileMap().values());
 		values.parallelStream()
-			.filter(f -> f.isActive(assignment, conditionDictionary) && Paths.get(f.getPath()).getFileName().toString()
-				.matches(CFileRegex))
+			.filter(f -> Paths.get(f.getPath()).getFileName().toString().matches(CFileRegex) 
+        		&& f.isActive(assignment, conditionDictionary))
 			.forEach(fileNode -> {
 				final List<LineNode> lineNodes = fileNode.getActiveData(assignment, conditionDictionary).collect(
 					Collectors
