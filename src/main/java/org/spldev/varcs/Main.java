@@ -118,17 +118,26 @@ public class Main implements CLIFunction {
     @Override
     public void run(List<String> args) {
         try {
-            installLogger();
+            final String logArg = "-log=";
+            int loglevel = args.stream()
+                    .filter(a -> a.startsWith(logArg))
+                    .findFirst()
+                    .map(a -> a.substring(logArg.length()))
+                    .map(Integer::parseInt)
+                    .orElse(-1);
+            installLogger(loglevel);
         } catch (IOException e) {
             e.printStackTrace();
             return;
         }
         try {
             createDirectories();
-            if (args.size() > 0) {
-                analyze(args.get(0));
-            } else {
+            String systemList =
+                    args.stream().filter(a -> !a.startsWith("-")).findFirst().orElse("");
+            if (systemList.isEmpty()) {
                 analyze("systems.list");
+            } else {
+                analyze(systemList);
             }
             Logger.logInfo("Finish");
         } catch (IOException e) {
@@ -177,7 +186,7 @@ public class Main implements CLIFunction {
 
                     final Extractor extractor = new Extractor(git);
                     createCommitTree(repository, extractor);
-                    //				printCommits(extractor);
+                    // printCommits(extractor);
                     buildCommitFormula(repository, extractor);
                     analyzeTree(repository, extractor);
                     analyzeCPP(repository, extractor);
@@ -301,12 +310,23 @@ public class Main implements CLIFunction {
         }
     }
 
-    public static void installLogger() throws IOException, FileNotFoundException {
+    public static void installLogger(int logLevel) throws IOException, FileNotFoundException {
         final String curTime =
                 new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Timestamp(System.currentTimeMillis()));
         final Path currentLogDirectory = logDirectory.resolve(curTime);
         Files.createDirectories(currentLogDirectory);
-        Logger.setOutLog(LogType.INFO, LogType.PROGRESS, LogType.DEBUG);
+        switch (logLevel) {
+            case 0:
+                Logger.setOutLog(LogType.INFO);
+                break;
+            case 1:
+                Logger.setOutLog(LogType.INFO, LogType.PROGRESS);
+                break;
+            case 2:
+            default:
+                Logger.setOutLog(LogType.INFO, LogType.PROGRESS, LogType.DEBUG);
+                break;
+        }
         Logger.setErrLog(LogType.ERROR);
         Logger.addFileLog(currentLogDirectory.resolve("console.log"), LogType.INFO, LogType.DEBUG, LogType.ERROR);
         Logger.addFormatter(new TimeStampFormatter());
@@ -350,7 +370,7 @@ public class Main implements CLIFunction {
             Logger.logInfo("Identifing variants");
             tabFormatter.incTabLevel();
             commitTree.identifyVariants(true, true, false, null, repository.getMasterBranchName());
-            //			commitTree.printVariants();
+            // commitTree.printVariants();
             tabFormatter.decTabLevel();
 
             csvWriter.addValue(commitTree.getRefMap().entrySet().stream()
