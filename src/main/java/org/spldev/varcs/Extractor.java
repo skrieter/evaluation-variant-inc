@@ -115,9 +115,8 @@ public class Extractor {
     }
 
     public Node buildCommitFormula() throws Exception {
-        final List<CommitNode> list = Trees.getPreOrderList(commitTree);
         final List<Node> propNodes = new ArrayList<>();
-        for (final CommitNode curCommit : list) {
+        Trees.preOrderStream(commitTree).forEach(curCommit -> {
             final Literal curLiteral =
                     new Literal(gitUtils.getVariable(curCommit).orElseThrow(NullPointerException::new), true);
             if (curCommit.getParents().isEmpty()) {
@@ -132,7 +131,7 @@ public class Extractor {
                 final Implies implies = new Implies(curLiteral, new And(parentLiterals));
                 propNodes.add(implies);
             }
-        }
+        });
         formula = new And(propNodes);
         return formula;
     }
