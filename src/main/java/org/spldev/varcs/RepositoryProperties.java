@@ -174,7 +174,7 @@ public class RepositoryProperties implements Serializable {
             }
         } catch (final Exception e) {
             Logger.logError(e);
+            return false;
         }
-        return false;
     }
 }

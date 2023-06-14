@@ -621,6 +621,8 @@ public class Main implements CLIFunction {
                     Logger.logInfo("Empty repository property for: " + system);
                 }
                 tabFormatter.decTabLevel();
+            } else {
+                Logger.logInfo("No source file for " + system);
             }
         }
     }
