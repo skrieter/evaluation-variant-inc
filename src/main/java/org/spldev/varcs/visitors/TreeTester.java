@@ -39,7 +39,7 @@ public class TreeTester implements TreeVisitor<Void, CommitNode> {
     public VisitorResult firstVisit(List<CommitNode> path) {
         final CommitNode currentCommit = TreeVisitor.getCurrentNode(path);
 
-        final List<CommitNode> children = currentCommit.getChildren();
+        final LinkedHashSet<CommitNode> children = currentCommit.getChildNodes();
         for (final CommitNode child : children) {
             if (!child.getParents().contains(currentCommit)) {
                 System.err.println(child.getObjectId().getName().substring(0, 6));
@@ -49,7 +49,7 @@ public class TreeTester implements TreeVisitor<Void, CommitNode> {
 
         final LinkedHashSet<CommitNode> parents = currentCommit.getParents();
         for (final CommitNode parent : parents) {
-            if (!parent.getChildren().contains(currentCommit)) {
+            if (!parent.getChildNodes().contains(currentCommit)) {
                 System.err.println(parent.getObjectId().getName().substring(0, 6));
                 throw new RuntimeException("inconsistent tree");
             }

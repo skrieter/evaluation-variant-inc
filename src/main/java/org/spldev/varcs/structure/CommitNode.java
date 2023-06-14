@@ -95,6 +95,10 @@ public class CommitNode implements Tree<CommitNode> {
         return new ArrayList<>(children);
     }
 
+    public LinkedHashSet<CommitNode> getChildNodes() {
+        return children;
+    }
+
     @Override
     public Tree<CommitNode> cloneNode() {
         return new CommitNode(this);

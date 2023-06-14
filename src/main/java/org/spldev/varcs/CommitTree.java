@@ -252,7 +252,7 @@ public class CommitTree {
     public int getNumberOfVariants() {
         final LinkedHashSet<CommitNode> endPoints = new LinkedHashSet<>();
         Trees.preOrderStream(commitTree)
-                .filter(node -> node.getChildren().isEmpty())
+                .filter(node -> node.getChildNodes().isEmpty())
                 .forEach(node -> endPoints.add(node));
         return endPoints.size();
     }
@@ -266,11 +266,11 @@ public class CommitTree {
         while (!startPoints.isEmpty()) {
             for (final CommitNode commitNode : startPoints) {
                 if ((commitNode != commitTree) && commitNode.getParents().isEmpty()) {
-                    for (final CommitNode child : commitNode.getChildren()) {
+                    for (final CommitNode child : commitNode.getChildNodes()) {
                         child.getParents().remove(commitNode);
                     }
-                    newPotentialOrphans.addAll(commitNode.getChildren());
-                    commitNode.getChildren().clear();
+                    newPotentialOrphans.addAll(commitNode.getChildNodes());
+                    commitNode.getChildNodes().clear();
                     removedOrphans++;
                 }
             }
@@ -307,7 +307,7 @@ public class CommitTree {
                     }
                     for (final CommitNode parent : parents) {
                         if (transitiveParents.contains(parent)) {
-                            parent.getChildren().remove(commitNode);
+                            parent.getChildNodes().remove(commitNode);
                             commitNode.getParents().remove(parent);
                             changed = true;
                         }
@@ -315,13 +315,13 @@ public class CommitTree {
                 });
 
                 Trees.postOrderStream(commitTree).forEach(currentCommit -> {
-                    if (currentCommit.getChildren().size() == 1) {
+                    if (currentCommit.getChildNodes().size() == 1) {
                         final CommitNode child =
-                                currentCommit.getChildren().iterator().next();
+                                currentCommit.getChildNodes().iterator().next();
                         child.getParents().remove(currentCommit);
                         for (final CommitNode parent : currentCommit.getParents()) {
-                            parent.getChildren().remove(currentCommit);
-                            parent.getChildren().add(child);
+                            parent.getChildNodes().remove(currentCommit);
+                            parent.getChildNodes().add(child);
                             child.getParents().add(parent);
                         }
                         changed = true;
@@ -341,12 +341,12 @@ public class CommitTree {
         Main.tabFormatter.incTabLevel();
 
         Trees.postOrderStream(commitTree).forEach(commitNode -> {
-            final ArrayList<CommitNode> sortedChildren = new ArrayList<>(commitNode.getChildren());
+            final ArrayList<CommitNode> sortedChildren = new ArrayList<>(commitNode.getChildNodes());
             Collections.sort(
                     sortedChildren,
-                    (c1, c2) -> c1.getChildren().size() - c2.getChildren().size());
-            commitNode.getChildren().clear();
-            commitNode.getChildren().addAll(sortedChildren);
+                    (c1, c2) -> c1.getChildNodes().size() - c2.getChildNodes().size());
+            commitNode.getChildNodes().clear();
+            commitNode.getChildNodes().addAll(sortedChildren);
         });
 
         Main.tabFormatter.decTabLevel();

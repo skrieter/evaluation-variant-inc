@@ -52,7 +52,7 @@ public class CommitNodeIO extends ByteIO<CommitNode> {
             final CommitNode node = treeNode;
             final LinkedHashSet<ObjectId> branches = node.getBranches();
             final LinkedHashSet<CommitNode> parents = node.getParents();
-            final List<CommitNode> children = node.getChildren();
+            final LinkedHashSet<CommitNode> children = node.getChildNodes();
 
             writeInt(branches.size());
             for (final ObjectId id : branches) {

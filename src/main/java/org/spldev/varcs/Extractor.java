@@ -76,7 +76,7 @@ public class Extractor {
         boolean problem = false;
         final List<CommitNode> list = Trees.getPreOrderList(commitTree);
         for (final CommitNode commitNode : list) {
-            final List<CommitNode> children = commitNode.getChildren();
+            final LinkedHashSet<CommitNode> children = commitNode.getChildNodes();
             for (final CommitNode child : children) {
                 if (!child.getParents().contains(commitNode)) {
                     problem = true;
@@ -91,7 +91,7 @@ public class Extractor {
         for (final CommitNode commitNode : list) {
             final LinkedHashSet<CommitNode> parents = commitNode.getParents();
             for (final CommitNode parent : parents) {
-                if (!parent.getChildren().contains(commitNode)) {
+                if (!parent.getChildNodes().contains(commitNode)) {
                     problem = true;
                     System.out.println(commitNode.toString());
                 }
@@ -108,7 +108,7 @@ public class Extractor {
             }
         }
         for (final CommitNode commitNode : list) {
-            if (commitNode.getChildren().size() == 1) {
+            if (commitNode.getChildNodes().size() == 1) {
                 throw new RuntimeException("One child: " + commitNode.toString());
             }
         }

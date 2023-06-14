@@ -100,7 +100,7 @@ public class ChangePrinter implements TreeVisitor<Void, CommitNode> {
     }
 
     public void printChanges(CommitNode parentCommit, CommitNode curCommit) throws Exception {
-        final String terminalMarker = curCommit.getChildren().isEmpty() ? "#" : "+";
+        final String terminalMarker = curCommit.getChildNodes().isEmpty() ? "#" : "+";
         final RevCommit commit = gitUtils.getRepository().parseCommit(curCommit.getObjectId());
         Logger.logInfo(terminalMarker + " " + gitUtils.getCommitString(commit));
 
