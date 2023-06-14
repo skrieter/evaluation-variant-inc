@@ -138,25 +138,59 @@ public class Main implements CLIFunction {
 
     public void analyze(String systemListFileName) {
         readSystemNames(systemListFileName);
-        parseRepositorySources();
-        initializeRepositories();
-        analyzeRepositories();
+
+        for (final String system : systemNames) {
+            Logger.logInfo("Parsing repository sources for " + system);
+            tabFormatter.incTabLevel();
+            parseRepositorySource(system);
+            tabFormatter.decTabLevel();
+
+            Logger.logInfo("Initialize repository " + system);
+            tabFormatter.incTabLevel();
+            initializeRepository(system);
+            tabFormatter.decTabLevel();
+
+            Logger.logInfo("Analyze repository " + system);
+            tabFormatter.incTabLevel();
+            analyzeRepository(system);
+            tabFormatter.decTabLevel();
+        }
 
         // TODO Extract cpp presence conditions
         // TODO Simplify all presence conditions
         // TODO Create feature model
     }
 
-    private void analyzeRepositories() {
-        for (final String system : systemNames) {
-            try {
-                final Optional<Extractor> extractor = analyzeRepository(system);
-                if (extractor.isPresent()) {
-                    computeStatistics(system, extractor.get());
+    private void analyzeRepository(final String system) {
+        try {
+            final RepositoryProperties repository = repoMap.get(system);
+            if (repository != null) {
+                final Path systemDirectory = auxillaryDirectory.resolve(repository.getName());
+                if (!Files.exists(systemDirectory)) {
+                    Files.createDirectories(systemDirectory);
+                } else if (skipExistingFiles) {
+                    Logger.logInfo("Skipping existing system " + system);
                 }
-            } catch (final Exception e) {
-                Logger.logError(e);
+                try (Git git = repository.getGit()) {
+                    Logger.logInfo(String.format("Analyzing system %s (%s)", system, git.toString()));
+                    tabFormatter.incTabLevel();
+
+                    final Extractor extractor = new Extractor(git);
+                    createCommitTree(repository, extractor);
+                    //				printCommits(extractor);
+                    buildCommitFormula(repository, extractor);
+                    analyzeTree(repository, extractor);
+                    analyzeCPP(repository, extractor);
+
+                    tabFormatter.decTabLevel();
+
+                    computeStatistics(system, extractor);
+                }
+            } else {
+                Logger.logInfo("Skipping invalid system " + system);
             }
+        } catch (final Exception e) {
+            Logger.logError(e);
         }
     }
 
@@ -282,37 +316,6 @@ public class Main implements CLIFunction {
 
     public List<String> getSystemNames() {
         return systemNames;
-    }
-
-    public Optional<Extractor> analyzeRepository(final String system) throws Exception {
-        final RepositoryProperties repository = repoMap.get(system);
-        if (repository != null) {
-            final Path systemDirectory = auxillaryDirectory.resolve(repository.getName());
-            if (!Files.exists(systemDirectory)) {
-                Files.createDirectories(systemDirectory);
-            } else if (skipExistingFiles) {
-                Logger.logInfo("Skipping existing system " + system);
-                return Optional.empty();
-            }
-            try (Git git = repository.getGit()) {
-                Logger.logInfo(String.format("Analyzing system %s (%s)", system, git.toString()));
-                tabFormatter.incTabLevel();
-
-                final Extractor extractor = new Extractor(git);
-                createCommitTree(repository, extractor);
-                //				printCommits(extractor);
-                buildCommitFormula(repository, extractor);
-                analyzeTree(repository, extractor);
-                analyzeCPP(repository, extractor);
-
-                tabFormatter.decTabLevel();
-
-                return Optional.of(extractor);
-            }
-        } else {
-            Logger.logInfo("Skipping invalid system " + system);
-            return Optional.empty();
-        }
     }
 
     private static void createCommitTree(RepositoryProperties repository, Extractor extractor) throws Exception {
@@ -589,48 +592,37 @@ public class Main implements CLIFunction {
         tabFormatter.decTabLevel();
     }
 
-    public void initializeRepositories() {
-        Logger.logInfo("Initialize repositories...");
-        tabFormatter.incTabLevel();
-        repoMap.clear();
-        for (final String system : systemNames) {
-            final Path propertiesFile = repositoriesDirectory.resolve(system + "." + propertiesFileExtension);
-            if (Files.isReadable(propertiesFile)) {
-                final RepositoryProperties repository = readFromFile(propertiesFile);
-                if (repository != null) {
-                    Logger.logInfo("Reading repo file for: " + system);
-                    tabFormatter.incTabLevel();
-                    if (repository.initRepo(FORK_LIMIT, FORCE_CLONE, FORCE_FETCH)) {
-                        repoMap.put(system, repository);
-                    }
-                    tabFormatter.decTabLevel();
+    private void initializeRepository(final String system) {
+        final Path propertiesFile = repositoriesDirectory.resolve(system + "." + propertiesFileExtension);
+        if (Files.isReadable(propertiesFile)) {
+            final RepositoryProperties repository = readFromFile(propertiesFile);
+            if (repository != null) {
+                Logger.logInfo("Reading repo file for: " + system);
+                tabFormatter.incTabLevel();
+                if (repository.initRepo(FORK_LIMIT, FORCE_CLONE, FORCE_FETCH)) {
+                    repoMap.put(system, repository);
                 }
+                tabFormatter.decTabLevel();
             }
         }
-        tabFormatter.decTabLevel();
     }
 
-    public void parseRepositorySources() {
-        Logger.logInfo("Parsing repository sources...");
-        tabFormatter.incTabLevel();
-        for (final String system : systemNames) {
-            final Path propertiesFile = repositoriesDirectory.resolve(system + "." + propertiesFileExtension);
-            if (overwritePropertyFiles || !Files.exists(propertiesFile)) {
-                final Optional<RepositoryConverter> converter = getRepositoryConverter(system, "github", "local");
-                if (converter.isPresent()) {
-                    tabFormatter.incTabLevel();
-                    final RepositoryProperties repository = converter.get().getRepository();
-                    if (repository != null) {
-                        Logger.logInfo("Writing repo file: " + propertiesFile);
-                        writeToFile(repository, propertiesFile);
-                    } else {
-                        Logger.logInfo("Empty repository property for: " + system);
-                    }
-                    tabFormatter.decTabLevel();
+    private void parseRepositorySource(final String system) {
+        final Path propertiesFile = repositoriesDirectory.resolve(system + "." + propertiesFileExtension);
+        if (overwritePropertyFiles || !Files.exists(propertiesFile)) {
+            final Optional<RepositoryConverter> converter = getRepositoryConverter(system, "github", "local");
+            if (converter.isPresent()) {
+                tabFormatter.incTabLevel();
+                final RepositoryProperties repository = converter.get().getRepository();
+                if (repository != null) {
+                    Logger.logInfo("Writing repo file: " + propertiesFile);
+                    writeToFile(repository, propertiesFile);
+                } else {
+                    Logger.logInfo("Empty repository property for: " + system);
                 }
+                tabFormatter.decTabLevel();
             }
         }
-        tabFormatter.decTabLevel();
     }
 
     private static Optional<RepositoryConverter> getRepositoryConverter(String system, String... extensions) {
