@@ -112,18 +112,18 @@ public class ConditionIO extends ByteIO<NodeDictionary> {
             writeInt(nodes.getVariableIndex(String.valueOf(literal.var)));
         } else if (node instanceof And) {
             writeByte(BYTE_BEGIN);
-            for (final Node child : node.getChildNodes()) {
+            for (final Node child : node.getChildren()) {
                 writeNodeRec(child);
             }
             writeByte(BYTE_AND);
         } else if (node instanceof Or) {
             writeByte(BYTE_BEGIN);
-            for (final Node child : node.getChildNodes()) {
+            for (final Node child : node.getChildren()) {
                 writeNodeRec(child);
             }
             writeByte(BYTE_OR);
         } else {
-            for (final Node child : node.getChildNodes()) {
+            for (final Node child : node.getChildren()) {
                 writeNodeRec(child);
             }
             if (node instanceof Implies) {
@@ -198,7 +198,7 @@ public class ConditionIO extends ByteIO<NodeDictionary> {
     }
 
     private Node refineNode(Node node) {
-        final Node[] children = node.getChildNodes();
+        final Node[] children = node.getChildren();
         if (children != null) {
             for (int i = 0; i < children.length; i++) {
                 final Node child = children[i];
