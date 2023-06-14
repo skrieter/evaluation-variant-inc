@@ -26,13 +26,84 @@ import org.eclipse.jgit.lib.ObjectId;
 
 public class CommitNode implements Tree<CommitNode> {
 
+    public static class HashList<T> extends LinkedHashSet<T> implements List<T> {
+
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public boolean addAll(int index, Collection<? extends T> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public T get(int index) {
+            if (index < 0 || index >= size()) {
+                throw new IndexOutOfBoundsException();
+            }
+            Iterator<T> iterator = iterator();
+            for (int i = 0; i < index; i++) {
+                iterator.next();
+            }
+            return iterator.next();
+        }
+
+        @Override
+        public T set(int index, T element) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void add(int index, T element) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public T remove(int index) {
+            if (index < 0 || index >= size()) {
+                throw new IndexOutOfBoundsException();
+            }
+            Iterator<T> iterator = iterator();
+            for (int i = 0; i < index; i++) {
+                iterator.next();
+            }
+            T element = iterator.next();
+            iterator.remove();
+            return element;
+        }
+
+        @Override
+        public int indexOf(Object o) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int lastIndexOf(Object o) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ListIterator<T> listIterator() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ListIterator<T> listIterator(int index) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<T> subList(int fromIndex, int toIndex) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
     private final ObjectId objectId;
 
     private final LinkedHashSet<ObjectId> branches = new LinkedHashSet<>();
 
     private final LinkedHashSet<CommitNode> parents = new LinkedHashSet<>();
 
-    private final LinkedHashSet<CommitNode> children = new LinkedHashSet<>();
+    private final HashList<CommitNode> children = new HashList<>();
 
     public CommitNode(ObjectId objectId) {
         this.objectId = objectId;
@@ -92,7 +163,7 @@ public class CommitNode implements Tree<CommitNode> {
 
     @Override
     public List<CommitNode> getChildren() {
-        return new ArrayList<>(children);
+        return children;
     }
 
     public LinkedHashSet<CommitNode> getChildNodes() {
