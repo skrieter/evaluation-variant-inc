@@ -179,6 +179,7 @@ public class Main implements CLIFunction {
                     Files.createDirectories(systemDirectory);
                 } else if (skipExistingFiles) {
                     Logger.logInfo("Skipping existing system " + system);
+                    return;
                 }
                 try (Git git = repository.getGit()) {
                     Logger.logInfo(String.format("Analyzing system %s (%s)", system, git.toString()));
