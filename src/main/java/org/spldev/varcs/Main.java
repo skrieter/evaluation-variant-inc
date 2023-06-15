@@ -385,17 +385,19 @@ public class Main implements CLIFunction {
 
             csvWriter.addValue(commitTree.getNumberOfVariants()); // #Variants
 
-            long treeSize = Trees.preOrderStream(commitTree.getRoot()).count();
+            Logger.logInfo("Counting nodes...");
+            Logger.logInfo("Commit count: " + commitTree.getCommits().size());
+            long treeSize = CommitTree.preOrderStream(commitTree.getRoot()).count();
+            Logger.logInfo("Size (no orphans): " + (treeSize));
             final int orphanCount = commitTree.removeOrphans();
 
             csvWriter.addValue(treeSize + orphanCount); // #Commits (all)
             csvWriter.addValue(treeSize); // #Commits (no orphans)
 
-            Logger.logDebug("Size (complete):   " + (treeSize + orphanCount));
-            Logger.logDebug("Size (no orphans): " + (treeSize));
+            Logger.logInfo("Size (complete):   " + (treeSize + orphanCount));
             commitTree.pruneCommitTree();
             commitTree.sortCommitTree();
-            treeSize = Trees.preOrderStream(commitTree.getRoot()).count();
+            treeSize = CommitTree.preOrderStream(commitTree.getRoot()).count();
             Logger.logDebug("Size (pruned):     " + treeSize);
 
             csvWriter.addValue(treeSize); // #Commits (pruned)
@@ -411,7 +413,7 @@ public class Main implements CLIFunction {
             tabFormatter.incTabLevel();
             final CommitNode commitTreeRoot = CommitNodeIO.read(treeFile);
             extractor.setCommitTree(commitTreeRoot);
-            long treeSize = Trees.preOrderStream(commitTreeRoot).count();
+            long treeSize = CommitTree.preOrderStream(commitTreeRoot).count();
             Logger.logDebug("Size: " + treeSize);
             tabFormatter.decTabLevel();
         }

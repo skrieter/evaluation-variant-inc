@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.eclipse.jgit.api.Git;
 import org.prop4j.And;
 import org.prop4j.Implies;
@@ -74,7 +75,7 @@ public class Extractor {
 
     public void testTreeConsistency() throws Exception {
         boolean problem = false;
-        final List<CommitNode> list = Trees.getPreOrderList(commitTree);
+        final List<CommitNode> list = CommitTree.preOrderStream(commitTree).collect(Collectors.toList());
         for (final CommitNode commitNode : list) {
             final LinkedHashSet<CommitNode> children = commitNode.getChildNodes();
             for (final CommitNode child : children) {
@@ -116,7 +117,7 @@ public class Extractor {
 
     public Node buildCommitFormula() throws Exception {
         final List<Node> propNodes = new ArrayList<>();
-        Trees.preOrderStream(commitTree).forEach(curCommit -> {
+        CommitTree.preOrderStream(commitTree).forEach(curCommit -> {
             final Literal curLiteral =
                     new Literal(gitUtils.getVariable(curCommit).orElseThrow(NullPointerException::new), true);
             if (curCommit.getParents().isEmpty()) {
@@ -137,7 +138,7 @@ public class Extractor {
     }
 
     public void extractLines() throws Exception {
-        Trees.traverse(commitTree, new LineExtractor(gitUtils, fileMap, formula));
+        CommitTree.levelOrderStream(commitTree).forEach(new LineExtractor(gitUtils, fileMap, formula));
     }
 
     private int count = 0;
@@ -145,7 +146,7 @@ public class Extractor {
     public void extractAnnotations() {
         Main.tabFormatter.incTabLevel();
         Logger.logInfo("Extracting...");
-        Trees.traverse(commitTree, new AnnotationExtractor(gitUtils, fileMap, formula));
+        CommitTree.levelOrderStream(commitTree).forEach(new AnnotationExtractor(gitUtils, fileMap, formula));
         Logger.logInfo("Converting...");
         Main.tabFormatter.incTabLevel();
         final Collection<TextFileNode> values = fileMap.getTextFileMap().values();
@@ -189,7 +190,7 @@ public class Extractor {
     }
 
     public void printFormula() {
-        Logger.logInfo(formula.toString());
+        Logger.logDebug(formula.toString());
     }
 
     public Node getFormula() {

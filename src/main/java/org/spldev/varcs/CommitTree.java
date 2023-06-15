@@ -21,7 +21,7 @@
 package org.spldev.varcs;
 
 import de.featjar.util.logging.Logger;
-import de.featjar.util.tree.Trees;
+import de.featjar.util.tree.structure.Tree;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,6 +35,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Spliterator;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand.ListMode;
 import org.eclipse.jgit.lib.ObjectId;
@@ -57,6 +61,169 @@ public class CommitTree {
         }
     }
 
+    private static class PreOrderSpliterator<T extends X, X extends Tree<X>> implements Spliterator<X> {
+
+        final LinkedList<X> stack = new LinkedList<>();
+        final HashSet<X> visited = new HashSet<>();
+
+        public PreOrderSpliterator(T node) {
+            if (node != null) {
+                stack.addFirst(node);
+            }
+        }
+
+        @Override
+        public int characteristics() {
+            return Spliterator.ORDERED | Spliterator.IMMUTABLE;
+        }
+
+        @Override
+        public long estimateSize() {
+            return Long.MAX_VALUE;
+        }
+
+        @Override
+        public boolean tryAdvance(Consumer<? super X> consumer) {
+            if (stack.isEmpty()) {
+                return false;
+            } else {
+                final X node = stack.removeFirst();
+                if (visited.add(node)) {
+                    stack.addAll(0, node.getChildren());
+                    consumer.accept(node);
+                }
+                return true;
+            }
+        }
+
+        @Override
+        public Spliterator<X> trySplit() {
+            return null;
+        }
+    }
+
+    private static class StackEntry<T> {
+        private T node;
+        private List<T> remainingChildren;
+
+        public StackEntry(T node) {
+            this.node = node;
+        }
+    }
+
+    private static class PostOrderSpliterator<T extends Tree<T>> implements Spliterator<T> {
+
+        final LinkedList<StackEntry<T>> stack = new LinkedList<>();
+        final HashSet<T> visited = new HashSet<>();
+
+        public PostOrderSpliterator(T node) {
+            if (node != null) {
+                stack.push(new StackEntry<>(node));
+                visited.add(node);
+            }
+        }
+
+        @Override
+        public int characteristics() {
+            return Spliterator.ORDERED | Spliterator.IMMUTABLE;
+        }
+
+        @Override
+        public long estimateSize() {
+            return Long.MAX_VALUE;
+        }
+
+        @Override
+        public boolean tryAdvance(Consumer<? super T> consumer) {
+            if (stack.isEmpty()) {
+                return false;
+            }
+            while (!stack.isEmpty()) {
+                final StackEntry<T> entry = stack.peek();
+                if (entry.remainingChildren == null) {
+                    entry.remainingChildren = new LinkedList<>(entry.node.getChildren());
+                }
+                if (!entry.remainingChildren.isEmpty()) {
+                    boolean added = false;
+                    while (!entry.remainingChildren.isEmpty()) {
+                        T child = entry.remainingChildren.remove(0);
+                        if (visited.add(child)) {
+                            stack.push(new StackEntry<>(child));
+                            added = true;
+                            break;
+                        }
+                    }
+                    if (!added) {
+                        consumer.accept(entry.node);
+                        stack.pop();
+                    }
+                } else {
+                    consumer.accept(entry.node);
+                    stack.pop();
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public Spliterator<T> trySplit() {
+            return null;
+        }
+    }
+
+    private static class LevelOrderSpliterator<T extends X, X extends Tree<X>> implements Spliterator<X> {
+
+        final LinkedList<X> queue = new LinkedList<>();
+        final HashSet<X> visited = new HashSet<>();
+
+        public LevelOrderSpliterator(T node) {
+            if (node != null) {
+                queue.addFirst(node);
+            }
+        }
+
+        @Override
+        public int characteristics() {
+            return Spliterator.ORDERED | Spliterator.IMMUTABLE;
+        }
+
+        @Override
+        public long estimateSize() {
+            return Long.MAX_VALUE;
+        }
+
+        @Override
+        public boolean tryAdvance(Consumer<? super X> consumer) {
+            if (queue.isEmpty()) {
+                return false;
+            } else {
+                final X node = queue.removeFirst();
+                if (visited.add(node)) {
+                    consumer.accept(node);
+                    queue.addAll(node.getChildren());
+                }
+                return true;
+            }
+        }
+
+        @Override
+        public Spliterator<X> trySplit() {
+            return null;
+        }
+    }
+
+    public static <T extends X, X extends Tree<X>> Stream<X> preOrderStream(T node) {
+        return StreamSupport.stream(new PreOrderSpliterator<>(node), false);
+    }
+
+    public static <T extends Tree<T>> Stream<T> postOrderStream(T node) {
+        return StreamSupport.stream(new PostOrderSpliterator<>(node), false);
+    }
+
+    public static <T extends Tree<T>> Stream<T> levelOrderStream(T node) {
+        return StreamSupport.stream(new LevelOrderSpliterator<>(node), false);
+    }
+
     private final GitUtils gitUtils;
 
     private LinkedHashMap<ObjectId, List<Ref>> variantRefMap = new LinkedHashMap<>();
@@ -64,6 +231,7 @@ public class CommitTree {
 
     private ObjectId head;
     private CommitNode commitTree;
+    private LinkedHashSet<CommitNode> commits;
 
     private LinkedHashSet<CommitNode> startPoints;
     private int removedOrphans = 0;
@@ -202,16 +370,20 @@ public class CommitTree {
     }
 
     public void buildCommitTree() throws Exception {
-        final LinkedHashMap<ObjectId, CommitContainer> commits = new LinkedHashMap<>();
+        LinkedHashMap<ObjectId, CommitContainer> commitMap = new LinkedHashMap<>();
+        commits = new LinkedHashSet<>();
 
         Logger.logInfo("Getting commits...");
         Main.tabFormatter.incTabLevel();
 
         final Iterable<RevCommit> allCommits = gitUtils.getGit().log().all().call();
         for (final RevCommit revCommit : allCommits) {
-            commits.putIfAbsent(
-                    revCommit.toObjectId(),
-                    new CommitContainer(gitUtils.getRepository().parseCommit(revCommit)));
+            if (!commitMap.containsKey(revCommit.toObjectId())) {
+                CommitContainer container =
+                        new CommitContainer(gitUtils.getRepository().parseCommit(revCommit));
+                commitMap.put(revCommit.toObjectId(), container);
+                commits.add(container.commitNode);
+            }
         }
         Main.tabFormatter.decTabLevel();
 
@@ -222,21 +394,21 @@ public class CommitTree {
         Collections.sort(variantRefList, this::compareRefTime);
         Collections.reverse(variantRefList);
 
-        commitTree = commits.get(getHeadMergeBase(variantRefList)).commitNode;
+        commitTree = commitMap.get(getHeadMergeBase(variantRefList)).commitNode;
 
         startPoints = new LinkedHashSet<>();
 
-        for (final CommitContainer commitContainer : commits.values()) {
+        for (final CommitContainer commitContainer : commitMap.values()) {
             final CommitNode commitNode = commitContainer.commitNode;
             for (final RevCommit parentCommit : commitContainer.revCommit.getParents()) {
-                final CommitContainer parent = commits.get(parentCommit.getId());
+                final CommitContainer parent = commitMap.get(parentCommit.getId());
                 if (parent != null) {
                     parent.commitNode.addChild(commitNode);
                     commitNode.addParent(parent.commitNode);
                 }
             }
         }
-        for (final CommitContainer commitContainer : commits.values()) {
+        for (final CommitContainer commitContainer : commitMap.values()) {
             final CommitNode commitNode = commitContainer.commitNode;
             if (commitNode.getParents().isEmpty()) {
                 startPoints.add(commitNode);
@@ -251,9 +423,7 @@ public class CommitTree {
 
     public int getNumberOfVariants() {
         final LinkedHashSet<CommitNode> endPoints = new LinkedHashSet<>();
-        Trees.preOrderStream(commitTree)
-                .filter(node -> node.getChildNodes().isEmpty())
-                .forEach(node -> endPoints.add(node));
+        commits.stream().filter(node -> node.getChildNodes().isEmpty()).forEach(node -> endPoints.add(node));
         return endPoints.size();
     }
 
@@ -290,7 +460,7 @@ public class CommitTree {
         public void prune(CommitNode commitTree) {
             do {
                 changed = false;
-                Trees.postOrderStream(commitTree).forEach(commitNode -> {
+                postOrderStream(commitTree).forEach(commitNode -> {
                     final ArrayList<CommitNode> parents = new ArrayList<>(commitNode.getParents());
                     final HashSet<CommitNode> transitiveParents = new HashSet<>();
                     final LinkedList<CommitNode> newTransitiveParents = new LinkedList<>();
@@ -314,7 +484,7 @@ public class CommitTree {
                     }
                 });
 
-                Trees.postOrderStream(commitTree).forEach(currentCommit -> {
+                postOrderStream(commitTree).forEach(currentCommit -> {
                     if (currentCommit.getChildNodes().size() == 1) {
                         final CommitNode child =
                                 currentCommit.getChildNodes().iterator().next();
@@ -340,7 +510,7 @@ public class CommitTree {
         Logger.logInfo("Sort commit tree...");
         Main.tabFormatter.incTabLevel();
 
-        Trees.postOrderStream(commitTree).forEach(commitNode -> {
+        postOrderStream(commitTree).forEach(commitNode -> {
             final ArrayList<CommitNode> sortedChildren = new ArrayList<>(commitNode.getChildNodes());
             Collections.sort(
                     sortedChildren,
@@ -408,5 +578,9 @@ public class CommitTree {
 
     public CommitNode getRoot() {
         return commitTree;
+    }
+
+    public LinkedHashSet<CommitNode> getCommits() {
+        return commits;
     }
 }

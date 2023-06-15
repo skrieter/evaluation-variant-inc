@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.prop4j.And;
 import org.prop4j.Literal;
@@ -45,7 +46,7 @@ import org.spldev.varcs.structure.DataNode;
 import org.spldev.varcs.structure.LineNode;
 import org.spldev.varcs.structure.TextFileNode;
 
-public class AnnotationExtractor implements TreeVisitor<Void, CommitNode> {
+public class AnnotationExtractor implements TreeVisitor<Void, CommitNode>, Consumer<CommitNode> {
 
     public static final String CFileRegex = ".+[.](c|h|cxx|hxx|cpp|hpp)\\Z";
 
@@ -65,7 +66,15 @@ public class AnnotationExtractor implements TreeVisitor<Void, CommitNode> {
 
     @Override
     public VisitorResult firstVisit(List<CommitNode> path) {
-        final CommitNode currentCommit = TreeVisitor.getCurrentNode(path);
+        return extract(TreeVisitor.getCurrentNode(path));
+    }
+
+    @Override
+    public void accept(CommitNode currentCommit) {
+        extract(currentCommit);
+    }
+
+    public VisitorResult extract(CommitNode currentCommit) {
         for (final CommitNode parent : currentCommit.getParents()) {
             final Map<Object, Boolean> parentAssignment = visitedNodes.get(parent);
             if (parentAssignment == null) {

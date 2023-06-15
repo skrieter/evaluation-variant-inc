@@ -38,6 +38,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.eclipse.jgit.diff.DiffAlgorithm;
 import org.eclipse.jgit.diff.DiffAlgorithm.SupportedAlgorithm;
@@ -60,7 +61,7 @@ import org.spldev.varcs.structure.DataNode;
 import org.spldev.varcs.structure.LineNode;
 import org.spldev.varcs.structure.TextFileNode;
 
-public class LineExtractor implements TreeVisitor<Void, CommitNode> {
+public class LineExtractor implements TreeVisitor<Void, CommitNode>, Consumer<CommitNode> {
 
     private static final DiffAlgorithm algorithm = DiffAlgorithm.getAlgorithm(SupportedAlgorithm.HISTOGRAM);
 
@@ -82,7 +83,15 @@ public class LineExtractor implements TreeVisitor<Void, CommitNode> {
 
     @Override
     public VisitorResult firstVisit(List<CommitNode> path) {
-        final CommitNode currentCommit = TreeVisitor.getCurrentNode(path);
+        return extract(TreeVisitor.getCurrentNode(path));
+    }
+
+    @Override
+    public void accept(CommitNode currentCommit) {
+        extract(currentCommit);
+    }
+
+    public VisitorResult extract(CommitNode currentCommit) {
         for (final CommitNode parent : currentCommit.getParents()) {
             final Map<Object, Boolean> parentAssignment = visitedNodes.get(parent);
             if (parentAssignment == null) {

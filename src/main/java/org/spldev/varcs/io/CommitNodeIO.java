@@ -20,11 +20,12 @@
  */
 package org.spldev.varcs.io;
 
-import de.featjar.util.tree.Trees;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.eclipse.jgit.lib.*;
+import org.spldev.varcs.CommitTree;
 import org.spldev.varcs.structure.*;
 
 public class CommitNodeIO extends ByteIO<CommitNode> {
@@ -39,7 +40,7 @@ public class CommitNodeIO extends ByteIO<CommitNode> {
 
     @Override
     protected void write(CommitNode root) throws IOException {
-        final List<CommitNode> nodes = Trees.getPreOrderList(root);
+        final List<CommitNode> nodes = CommitTree.preOrderStream(root).collect(Collectors.toList());
         writeInt(nodes.size());
 
         final int[] idSegments = new int[5];

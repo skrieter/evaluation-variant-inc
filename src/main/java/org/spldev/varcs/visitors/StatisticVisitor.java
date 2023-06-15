@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.prop4j.Literal;
 import org.prop4j.Node;
@@ -37,7 +38,8 @@ import org.spldev.varcs.structure.BinaryFileNode;
 import org.spldev.varcs.structure.CommitNode;
 import org.spldev.varcs.structure.TextFileNode;
 
-public class StatisticVisitor implements TreeVisitor<HashMap<CommitNode, StatisticVisitor.Statistic>, CommitNode> {
+public class StatisticVisitor
+        implements TreeVisitor<HashMap<CommitNode, StatisticVisitor.Statistic>, CommitNode>, Consumer<CommitNode> {
 
     public static class Statistic {
         public long activeTextFiles, activeBinaryFiles, loc;
@@ -70,8 +72,15 @@ public class StatisticVisitor implements TreeVisitor<HashMap<CommitNode, Statist
 
     @Override
     public VisitorResult firstVisit(List<CommitNode> path) {
-        final CommitNode currentCommit = TreeVisitor.getCurrentNode(path);
+        return extract(TreeVisitor.getCurrentNode(path));
+    }
 
+    @Override
+    public void accept(CommitNode currentCommit) {
+        extract(currentCommit);
+    }
+
+    public VisitorResult extract(CommitNode currentCommit) {
         for (final CommitNode parent : currentCommit.getParents()) {
             if (visitedNodes.get(parent) == null) {
                 return VisitorResult.SkipChildren;
