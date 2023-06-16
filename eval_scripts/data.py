@@ -2,6 +2,11 @@
 import os
 import math
 import pandas as pd
+import numpy as np
+
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_colwidth', None)
 
 def read_data(input_path):
     # Collect statistic files
@@ -50,7 +55,7 @@ def process_data(df):
     df['ForkBranchRatio'] = df['AccessibleForks'].astype(float) / df['OriginBranches'].astype(float)
     df['VariantBranchRatio'] = df['Variants'].astype(float) / df['AllBranches'].astype(float)
     df['ForkRatio'] = df['OriginBranches'].astype(float) / df['AccessibleForks'].astype(float)
-    df['ForkRatio'].fillna(0)
+    df['ForkRatio'].replace([np.inf, -np.inf], 0, inplace=True)
     df['VarFilesSize'] = df['VarTextFilesSize'].astype(int) + df['VarBinaryFilesSize'].astype(int) + df['CommitConditionsSize'].astype(int)
     df['VarPCFilesSize'] = df['VarTextPCFilesSize'].astype(int) + df['VarBinaryFilesSize'].astype(int) + df['AllConditionsSize'].astype(int)
     df['VariantRatio'] = df['Variants'].astype(float) / (df['AccessibleForks'].astype(float) + df['OriginBranches'].astype(float))

@@ -1,11 +1,16 @@
-#import csv
 import os
+import sys
 from data import *
 from tables import *
 from plots import *
 
-input_path = "../gen/statistics/"
-output_path = "../gen/plots/"
+if len(sys.argv) > 1:
+    root_path = sys.argv[1]
+else:
+    root_path = "../eval"
+
+input_path = root_path + "/statistics/"
+output_path = root_path + "/plots/"
 
 # Create output directory
 if not os.path.exists(output_path):
