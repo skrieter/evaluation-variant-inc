@@ -1,111 +1,161 @@
-	test
+360Controller
+3d-game-shaders-for-beginners
+albert
+annoy
+anypixel
+AppImageKit
+aria2
+aseprite
 axtls
-webserver
-xserver
-MPSolve
-openvpn
-clamav-devel
+BackgroundMusic
+beanstalkd
+blurhash
+borg
+brotli
 busybox
-	subversion
-	tcl
-	Marlin
-		tensorflow
-		linux
-		electron
-		terminal
-		swift
-		netdata
-		opencv
-		redis
-		bitcoin
-		protobuf
-		pytorch
-		tesseract
-	x64dbg
-		scrcpy
-		git
-	PowerToys
-		godot
-		caffe
-		php-src
-		phantomjs
-		grpc
-		ijkplayer
-		wrk
-	rethinkdb
-		imgui
-		leveldb
-	cmder
-		obs-studio
-	the_silver_searcher
-		FFmpeg
-	aria2
-		calculator
-		json
-		xgboost
-		*	emscripten
-		The-Art-Of-Programming-By-July
-		How-to-Make-a-Computer-Operating-System
-		incubator-mxnet
-	tmux
-	os-tutorial
-		darknet
-		mongo
-		openpose
-		curl
-	jq
-		rocksdb
-	osquery
-		CNTK
-		apollo
-		openpilot
-	hhvm
-		googletest
-	RedisDesktopManager
-		swoole-src
-	v8
-	libuv
-		folly
-	flatbuffers
-		*	mars
-		*	DeepSpeech
-		cocos2d-x
-		numpy
-	envoy
-		CnC_Remastered_Collection
-	HarmonyOS
-	incubator-weex
-		leetcode
-		interview
-		openssl
-	sqlitebrowser
-	yoga
-		stb
-	nuklear
-	radare2
-	masscan
-	tdesktop
-	mpv
-	trojan
-		vnpy
-	zstd
-	Magisk
-		Paddle
-	react-native-windows
-	guetzli
-		nginx
-	cosmos
-		TDengine
-	goaccess
-		lede
-	Catch2
-	taichi
-	uWebSockets
-	yuzu
-		Arduino
-	Proton
-	rufus
-	notepad-plus-plus
-	ClickHouse
-	LightGBM
-	Karabiner-Elements
+calculator
+capnproto
+catboost
+Catch2
+Cello
+clamav-devel
+clip
+cmder
+CnC_Remastered_Collection
+ConEmu
+cosmos
+crow
+curl
+cutter
+darling
+devilution
+disque
+dxvk
+EASTL
+emscripten
+envoy
+ffmpeg-libav-tutorial
+flameshot
+flatbuffers
+flutter-desktop-embedding
+folly
+foundationdb
+gb-studio
+git-crypt
+goaccess
+Gource
+guetzli
+h2o
+HandBrake
+HarmonyOS
+hermes
+hhvm
+htop
+i3
+incubator-weex
+interview
+ish
+japronto
+jemalloc
+jq
+json
+kakoune
+Karabiner-Elements
+keepassxc
+kphp-kdb
+libui
+libuv
+LightGBM
+liteide
+lwan
+lz4
+mactype
+macvim
+Magisk
+masscan
+mjolnir
+mosh
+MPSolve
+mpv
+nanomsg
+ninja
+nnn
+node-canvas
+node.bcrypt.js
+nodegui
+notepad-plus-plus
+nuklear
+obs-studio
+OpenCC
+openvpn
+os-tutorial
+osquery
+Paddle
+pifs
+polybar
+PowerToys
+Proton
+proxychains-ng
+pyxel
+Qv2ray
+radare2
+raspberry-pi-os
+re2
+react-native-windows
+redex
+RedisDesktopManager
+retdec
+rethinkdb
+robomongo
+robotgo
+robotjs
+rocksdb
+rofi
+rr
+rufus
+scrcpy
+scylla
+serenity
+simdjson
+Sourcetrail
+sqlitebrowser
+Squirrel.Windows
+Stacer
+STL
+subversion
+sway
+swoole-src
+sysdig
+taichi
+tcl
+TDengine
+tdesktop
+the_silver_searcher
+tig
+timescaledb
+tinyrenderer
+tmux
+TranslucentTB
+trojan
+upx
+uWebSockets
+v8
+varcs-testrepo
+Ventoy
+vnote
+waifu2x-caffe
+watchman
+webserver
+webview
+winfile
+winget-cli
+wrk
+x64dbg
+xhyve
+xserver
+yoga
+yuzu
+z3
+zeal
+ZeroTierOne
+zstd
